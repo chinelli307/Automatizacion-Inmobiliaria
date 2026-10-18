@@ -1,0 +1,273 @@
+{
+  "name": "Fotos Inmobiliaria",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ID"
+            },
+            {
+              "name": "ConversationID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1120,
+        272
+      ],
+      "id": "cfa98279-b2ec-478d-99ec-3c209df8d0f3",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.ID }}",
+        "returnAll": true,
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1kkBaaFo-fs5obJArd7UjbY0Z9HBlhMMr",
+            "mode": "list",
+            "cachedResultName": "Velea Inmobiliaria",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1kkBaaFo-fs5obJArd7UjbY0Z9HBlhMMr"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -896,
+        272
+      ],
+      "id": "14301d89-1522-46e7-a318-e999dec2248e",
+      "name": "Buscar carpeta del piso",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "='{{ $json.id }}' in parents",
+        "returnAll": true,
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -672,
+        272
+      ],
+      "id": "e36df7d4-5ae2-4beb-9615-c51547bd04b4",
+      "name": "Listar fotos",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -432,
+        272
+      ],
+      "id": "a0475208-e5c7-4a70-adf5-296b5dec4968",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        288
+      ],
+      "id": "441516fa-5a1d-4cec-9fdc-598d0bed3e24",
+      "name": "Descargar foto",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data",
+        "destinationKey": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        56,
+        288
+      ],
+      "id": "5b0f8a52-3c1e-4c58-9a7e-2f1d6c0b9e11",
+      "name": "Foto a base64"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "Velea",
+        "remoteJid": "={{ $('When Executed by Another Workflow').first().json.ConversationID }}",
+        "media": "={{ $json.data }}",
+        "mimetype": "={{ $('Descargar foto').item.binary.data.mimeType }}",
+        "fileName": "={{ $('Descargar foto').item.binary.data.fileName }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        280,
+        288
+      ],
+      "id": "8af6ec77-bf51-4bce-bc2d-bc957e383a63",
+      "name": "Enviar imagen",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "003fb4ab-dff9-4e6f-8700-1f64cf0ca63c",
+              "name": "Mensaje",
+              "value": "Fotos enviadas correctamente",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "96a55334-c2d7-40f6-b174-a4b9134f931f",
+      "name": "Respuesta al agente"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Buscar carpeta del piso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar carpeta del piso": {
+      "main": [
+        [
+          {
+            "node": "Listar fotos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar fotos": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Respuesta al agente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Descargar foto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar foto": {
+      "main": [
+        [
+          {
+            "node": "Foto a base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Foto a base64": {
+      "main": [
+        [
+          {
+            "node": "Enviar imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar imagen": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": []
+}
